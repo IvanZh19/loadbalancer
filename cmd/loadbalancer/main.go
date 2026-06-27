@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/IvanZh19/loadbalancer/health"
+	"github.com/IvanZh19/loadbalancer/metrics"
 	"github.com/IvanZh19/loadbalancer/pool"
 	"github.com/IvanZh19/loadbalancer/proxy"
 )
@@ -20,7 +21,9 @@ func main() {
 	p.AddBackend("http://localhost:9002")
 	p.AddBackend("http://localhost:9003")
 
-	proxy := proxy.NewProxyServer(p)
+	m := metrics.NewMetrics(p.Backends())
+	http.Handle("/metrics", m.Handler(p))
+	proxy := proxy.NewProxyServer(p, m)
 	http.Handle("/", proxy)
 
 	log.Println("load balancer listening on :8080")

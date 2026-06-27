@@ -5,16 +5,18 @@ import (
 	"net/http"
 	"sync/atomic"
 
+	"github.com/IvanZh19/loadbalancer/metrics"
 	"github.com/IvanZh19/loadbalancer/pool"
 )
 
 type ProxyServer struct {
 	pool *pool.BackendPool
 	client *http.Client
+	metrics *metrics.Metrics
 }
 
-func NewProxyServer(pool *pool.BackendPool) *ProxyServer {
-	return &ProxyServer{pool: pool, client: &http.Client{}}
+func NewProxyServer(pool *pool.BackendPool, m *metrics.Metrics) *ProxyServer {
+	return &ProxyServer{pool: pool, client: &http.Client{}, metrics: m}
 }
 
 func (p *ProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -27,6 +29,7 @@ func (p *ProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	req, err := http.NewRequest(r.Method, backend.URL.String()+r.URL.Path, r.Body)
 	if err != nil {
 		http.Error(w, "bad request", http.StatusInternalServerError)
+		p.metrics.RecordError(backend.URL.String())
 		return
 	}
 	req.Header = r.Header.Clone()
@@ -39,6 +42,7 @@ func (p *ProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	resp, err := p.client.Do(req)
 	if err != nil {
 		http.Error(w, "backend error", http.StatusBadGateway)
+		p.metrics.RecordError(backend.URL.String())
 		return
 	}
 	defer resp.Body.Close()
@@ -50,4 +54,5 @@ func (p *ProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(resp.StatusCode)
 	io.Copy(w, resp.Body)
+	p.metrics.RecordRequest(backend.URL.String())
 }
