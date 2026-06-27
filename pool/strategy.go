@@ -42,7 +42,7 @@ func (lc *LeastConnections) Pick(backends []*Backend, r *http.Request) *Backend 
 	}
 	best := alive[0]
 	for _, b := range alive[1:] {
-		if b.ActiveConns < best.ActiveConns {
+		if atomic.LoadInt64(&b.ActiveConns) < atomic.LoadInt64(&best.ActiveConns) {
 			best = b
 		}
 	}

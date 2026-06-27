@@ -9,7 +9,7 @@ type Backend struct {
 	URL *url.URL
 	alive bool
 	mu sync.RWMutex
-	ActiveConns int // for least connections later
+	ActiveConns int64 // for least connections
 }
 
 func (b *Backend) SetAlive(alive bool) {
