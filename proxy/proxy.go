@@ -2,8 +2,10 @@ package proxy
 
 import (
 	"io"
+	"net"
 	"net/http"
 	"sync/atomic"
+	"time"
 
 	"github.com/IvanZh19/loadbalancer/metrics"
 	"github.com/IvanZh19/loadbalancer/pool"
@@ -16,7 +18,20 @@ type ProxyServer struct {
 }
 
 func NewProxyServer(pool *pool.BackendPool, m *metrics.Metrics) *ProxyServer {
-	return &ProxyServer{pool: pool, client: &http.Client{}, metrics: m}
+	transport := &http.Transport{
+		MaxIdleConns: 30, // comfortable total among all hosts
+		MaxIdleConnsPerHost: 10, // more realistic amount to keep warm
+		IdleConnTimeout: time.Minute, // slightly aggressive but fine
+		DialContext: (&net.Dialer{
+			Timeout: 5 * time.Second,
+			KeepAlive: 20 * time.Second, // slightly more responsive
+		}).DialContext,
+	}
+	return &ProxyServer{
+		pool: pool,
+		client: &http.Client{Transport: transport},
+		metrics: m,
+	}
 }
 
 func (p *ProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
