@@ -18,13 +18,19 @@ type HealthChecker struct {
 	fallThreshold int64
 }
 
-func NewHealthChecker (pool *pool.BackendPool, interval time.Duration, timeout time.Duration) *HealthChecker {
+func NewHealthChecker (
+	pool *pool.BackendPool,
+	interval time.Duration,
+	timeout time.Duration,
+	riseThreshold int64,
+	fallThreshold int64,
+) *HealthChecker {
 	return &HealthChecker{
 		pool: pool,
 		interval: interval,
 		timeout: timeout,
-		riseThreshold: 1,
-		fallThreshold: 2,
+		riseThreshold: riseThreshold,
+		fallThreshold: riseThreshold,
 	}
 }
 

@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"slices"
@@ -64,7 +65,10 @@ func (p *ProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		atomic.AddInt64(&backend.ActiveConns, 1)
+		start := time.Now()
 		resp, err := p.client.Do(req)
+		duration := time.Since(start)
+		p.metrics.RecordLatency(backend.URL.String(), duration)
 		if err != nil {
 			atomic.AddInt64(&backend.ActiveConns, -1)
 			p.metrics.RecordError(backend.URL.String())
@@ -85,6 +89,8 @@ func (p *ProxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(resp.StatusCode)
 		io.Copy(w, resp.Body)
 		p.metrics.RecordRequest(backend.URL.String())
+		log.Printf("backend %s: %s %s -> %d (%v)",
+				backend.URL, r.Method, r.URL.Path, resp.StatusCode, duration)
 		return
 	}
 	http.Error(w, "all backends failed", http.StatusBadGateway)

@@ -1,0 +1,11 @@
+addr: ":8080"
+strategy: "least-connections"
+backends:
+  - "http://localhost:9001"
+  - "http://localhost:9002"
+  - "http://localhost:9003"
+health:
+  interval_secs: 10
+  timeout_secs: 2
+  fall_threshold: 2
+  rise_threshold: 1
