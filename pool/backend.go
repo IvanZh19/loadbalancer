@@ -10,6 +10,8 @@ type Backend struct {
 	alive bool
 	mu sync.RWMutex
 	ActiveConns int64 // for least connections
+	ConsecutiveFails int64 // atomic
+	ConsecutiveSuccess int64 // atomic
 }
 
 func (b *Backend) SetAlive(alive bool) {
